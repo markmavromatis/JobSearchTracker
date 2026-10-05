@@ -1,6 +1,7 @@
 import { Router } from "express";
 import * as cheerio from "cheerio";
-import { anthropic, MODEL, extractJsonBlock, friendlyErrorMessage } from "../anthropic.js";
+import { friendlyErrorMessage } from "../anthropic.js";
+import { extractJobFields } from "../jobService.js";
 
 export const extractJobRouter = Router();
 
@@ -29,48 +30,8 @@ extractJobRouter.post("/", async (req, res) => {
 
   try {
     const pageText = await fetchPageText(url);
-
-    const message = await anthropic.messages.create({
-      model: MODEL,
-      max_tokens: 2000,
-      messages: [
-        {
-          role: "user",
-          content: `Extract job posting details from the following page text. Return ONLY a JSON object (no prose, no markdown fences) with these exact keys:
-- "companyName": string
-- "companyUrl": string (the company's main website/homepage URL if you can determine or reasonably infer it, otherwise empty string)
-- "jobTitle": string
-- "jobDescription": string (the full job description text, cleaned up and reasonably concise, preserving key responsibilities/requirements)
-
-Page URL: ${url}
-
-Page text:
-"""
-${pageText}
-"""`,
-        },
-      ],
-    });
-
-    const textBlock = message.content.find((b) => b.type === "text");
-    if (!textBlock || textBlock.type !== "text") {
-      throw new Error("No text response from model");
-    }
-
-    const parsed = extractJsonBlock(textBlock.text) as {
-      companyName?: string;
-      companyUrl?: string;
-      jobTitle?: string;
-      jobDescription?: string;
-    };
-
-    res.json({
-      companyName: parsed.companyName ?? "",
-      companyUrl: parsed.companyUrl ?? "",
-      jobTitle: parsed.jobTitle ?? "",
-      jobDescription: parsed.jobDescription ?? "",
-      sourceUrl: url,
-    });
+    const fields = await extractJobFields(pageText, url);
+    res.json({ ...fields, sourceUrl: url });
   } catch (err) {
     console.error("extract-job error:", err);
     res.status(500).json({

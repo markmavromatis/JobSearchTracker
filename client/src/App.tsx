@@ -1,14 +1,14 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import "./App.css";
 import type { JobApplication, NewJobApplication } from "./types";
 import {
-  addApplication,
-  deleteApplication,
-  loadApplications,
-  loadBackground,
-  saveBackground,
-  updateApplication,
-} from "./storage";
+  createApplication,
+  fetchApplications,
+  fetchBackground,
+  removeApplication,
+  saveApplication,
+  saveBackgroundSetting,
+} from "./api";
 import { ApplicationList } from "./components/ApplicationList";
 import { ApplicationForm } from "./components/ApplicationForm";
 import { CoverLetterModal } from "./components/CoverLetterModal";
@@ -17,13 +17,31 @@ import { SettingsPage } from "./components/SettingsPage";
 type View = "list" | "settings";
 
 function App() {
-  const [applications, setApplications] = useState<JobApplication[]>(loadApplications());
-  const [background, setBackground] = useState(loadBackground());
+  const [applications, setApplications] = useState<JobApplication[]>([]);
+  const [background, setBackground] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
   const [view, setView] = useState<View>("list");
 
   const [showForm, setShowForm] = useState(false);
   const [editingApp, setEditingApp] = useState<JobApplication | undefined>(undefined);
   const [coverLetterApp, setCoverLetterApp] = useState<JobApplication | undefined>(undefined);
+
+  useEffect(() => {
+    Promise.all([fetchApplications(), fetchBackground()])
+      .then(([apps, settings]) => {
+        setApplications(apps);
+        setBackground(settings.background);
+      })
+      .catch((err) => {
+        setLoadError(
+          err instanceof Error
+            ? `Could not reach the server: ${err.message}`
+            : "Could not reach the server."
+        );
+      })
+      .finally(() => setLoading(false));
+  }, []);
 
   function handleAdd() {
     setEditingApp(undefined);
@@ -35,31 +53,50 @@ function App() {
     setShowForm(true);
   }
 
-  function handleSave(data: NewJobApplication) {
+  async function handleSave(data: NewJobApplication) {
     if (editingApp) {
-      setApplications(updateApplication(editingApp.id, data));
+      const updated = await saveApplication(editingApp.id, data);
+      setApplications((prev) => prev.map((app) => (app.id === updated.id ? updated : app)));
     } else {
-      addApplication(data);
-      setApplications(loadApplications());
+      const created = await createApplication(data);
+      setApplications((prev) => [...prev, created]);
     }
     setShowForm(false);
     setEditingApp(undefined);
   }
 
-  function handleDelete(id: string) {
+  async function handleDelete(id: string) {
     if (confirm("Delete this application?")) {
-      setApplications(deleteApplication(id));
+      await removeApplication(id);
+      setApplications((prev) => prev.filter((app) => app.id !== id));
     }
   }
 
-  function handleBackgroundSave(value: string) {
-    saveBackground(value);
+  async function handleBackgroundSave(value: string) {
+    await saveBackgroundSetting(value);
     setBackground(value);
   }
 
-  function handleCoverLetterSave(coverLetter: string) {
+  async function handleCoverLetterSave(coverLetter: string) {
     if (!coverLetterApp) return;
-    setApplications(updateApplication(coverLetterApp.id, { coverLetter }));
+    const updated = await saveApplication(coverLetterApp.id, { coverLetter });
+    setApplications((prev) => prev.map((app) => (app.id === updated.id ? updated : app)));
+  }
+
+  if (loading) {
+    return (
+      <div className="app-shell">
+        <p>Loading…</p>
+      </div>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <div className="app-shell">
+        <div className="form-error">{loadError}</div>
+      </div>
+    );
   }
 
   return (

@@ -1,0 +1,12 @@
+{
+  "manifest_version": 3,
+  "name": "Job Search Tracker Capture",
+  "version": "1.0.0",
+  "description": "Capture the job posting on the current page into Job Search Tracker",
+  "permissions": ["activeTab", "scripting"],
+  "host_permissions": ["http://localhost:3001/*"],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Capture job posting"
+  }
+}

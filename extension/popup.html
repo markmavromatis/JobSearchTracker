@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="header">
+    <span class="logo">Job Search Tracker</span>
+    <button id="btn-settings" class="icon-btn" title="Settings">&#9881;</button>
+  </div>
+
+  <div id="settings-panel" class="settings-panel" hidden>
+    <label class="field-label">Server URL
+      <input id="inp-server-url" type="text" placeholder="http://localhost:3001">
+    </label>
+    <button id="btn-save-settings" class="btn-secondary full-width">Save</button>
+  </div>
+
+  <div id="view-loading" class="view center-view">
+    <div class="spinner"></div>
+    <p class="muted">Reading page&hellip;</p>
+  </div>
+
+  <div id="view-error" class="view center-view" hidden>
+    <p class="badge badge-error" id="error-msg"></p>
+  </div>
+
+  <div id="view-main" class="view" hidden>
+    <p class="url-display" id="url-display"></p>
+
+    <div id="state-new" class="state" hidden>
+      <button id="btn-capture" class="btn-primary full-width">Capture Job</button>
+    </div>
+
+    <div id="state-result" class="state" hidden>
+      <div class="badge" id="result-badge"></div>
+      <p class="result-company" id="result-company"></p>
+      <p class="result-title" id="result-title"></p>
+      <p class="result-score" id="result-score"></p>
+      <button id="btn-open-app" class="btn-secondary full-width">Open in Job Search Tracker</button>
+    </div>
+  </div>
+
+  <div id="toast" class="toast" hidden></div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
